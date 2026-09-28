@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Owner dashboard demo</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:900px;margin:32px auto;padding:0 16px;color:#111827}
+    input{padding:6px 8px;margin:0 6px 8px 0}table{border-collapse:collapse;width:100%;margin:8px 0 20px}
+    th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left;font-size:14px}th{background:#f9fafb}
+  </style>
+</head>
+<body>
+  <h1>Owner dashboard</h1>
+  <p>API base <input id="base" value="http://localhost:8000" size="26">
+     email <input id="email" value="demo@example.com">
+     password <input id="pw" type="password" value="demo-password-123">
+     <button id="go">Load</button></p>
+  <pre id="err" style="color:#b91c1c"></pre>
+  <h2>Stats</h2><div id="stats"></div>
+  <h2>Submissions</h2><div id="subs"></div>
+<script>
+function table(rows, cols){
+  if(!rows.length) return '<p>No data yet.</p>';
+  var t=document.createElement('table'), h=t.insertRow();
+  cols.forEach(function(c){var th=document.createElement('th');th.textContent=c;h.appendChild(th);});
+  rows.forEach(function(r){var tr=t.insertRow();cols.forEach(function(c){tr.insertCell().textContent=(typeof r[c]==='object'&&r[c]!==null)?JSON.stringify(r[c]):(r[c]??'');});});
+  return t;
+}
+function put(id, node){var d=document.getElementById(id);d.innerHTML='';typeof node==='string'?d.innerHTML=node:d.appendChild(node);}
+document.getElementById('go').onclick=async function(){
+  var base=document.getElementById('base').value, err=document.getElementById('err'); err.textContent='';
+  try{
+    var login=await fetch(base+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:document.getElementById('email').value,password:document.getElementById('pw').value})});
+    if(!login.ok) throw new Error('login failed ('+login.status+')');
+    var key=(await login.json()).api_key, H={Authorization:'Bearer '+key};
+    var stats=await (await fetch(base+'/dashboard/stats',{headers:H})).json();
+    var subs=await (await fetch(base+'/dashboard/submissions',{headers:H})).json();
+    var box=document.createElement('div');
+    box.appendChild(document.createTextNode('Total (last '+stats.days+' days): '+stats.total));
+    box.appendChild(table(stats.per_widget,['widget_id','title','submissions']));
+    box.appendChild(table(stats.over_time,['day','submissions']));
+    box.appendChild(table(stats.geo,['country','submissions']));
+    put('stats',box);
+    put('subs',table(subs.items,['created_at','widget_id','data','geo']));
+  }catch(e){err.textContent=e.message;}
+};
+</script>
+</body>
+</html>

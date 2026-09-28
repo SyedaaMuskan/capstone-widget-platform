@@ -1,0 +1,31 @@
+# Manifest read by the evaluator.
+run: docker compose up --build -d
+seed: docker compose run --rm api python -m scripts.seed
+test: pip install -r requirements.txt && pytest -q
+base_url: http://localhost:8000
+customer_site_url: http://localhost:5500   # second origin (demo/index.html)
+
+# Demo data created by the seed step
+demo:
+  owner_email: demo@example.com
+  owner_password: demo-password-123      # local demo account only
+  widget_id: demo-widget
+
+endpoints:
+  health:            GET  /health
+  register:          POST /auth/register
+  login:             POST /auth/login
+  widgets:           "GET|POST /widgets  (Bearer token)"
+  snippet:           GET  /widgets/{id}/snippet   (Bearer token)
+  public_config:     GET  /widgets/{id}/config    (public, cached)
+  loader:            GET  /widget.js?id={id}      (public, cached)
+  bundle:            GET  /assets/widget.{hash}.js (public, immutable)
+  submit:            POST /submissions            (public, CORS)
+  dashboard:         "GET /dashboard/submissions | /dashboard/stats  (Bearer token)"
+
+# Fault injection used by probes 4, 5 (enabled in docker-compose by default)
+debug:
+  enabled: true
+  header: X-Debug-Token
+  token: dev-debug-token
+  faults_endpoint: PUT /debug/faults   # {"geo_a_down": bool, "geo_b_down": bool, "email_fail": bool}

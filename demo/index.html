@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Customer site (second origin, port 5500)</title>
+  <style>body{font-family:system-ui,sans-serif;max-width:720px;margin:40px auto;padding:0 16px;color:#111827}code{background:#f3f4f6;padding:2px 6px;border-radius:4px}</style>
+</head>
+<body>
+  <h1>Acme Bakery</h1>
+  <p>This page is served from <code>http://localhost:5500</code> while the API lives on <code>http://localhost:8000</code>:
+     two different origins, so every request below is a real cross-origin (CORS) request.</p>
+  <p>The widget below was installed with a single line:</p>
+  <pre><code>&lt;script src="http://localhost:8000/widget.js?id=demo-widget" async&gt;&lt;/script&gt;</code></pre>
+
+  <div id="flyrank-widget"></div>
+
+  <!-- THE ONE LINE THE CUSTOMER PASTES (widget id comes from the seed step or POST /widgets) -->
+  <script src="http://localhost:8000/widget.js?id=demo-widget" async></script>
+
+  <p style="margin-top:32px"><a href="dashboard.html">Open the owner dashboard demo &rarr;</a></p>
+</body>
+</html>
