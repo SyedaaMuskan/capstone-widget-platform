@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: widgets
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: widgets
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U widgets -d widgets"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://widgets:${POSTGRES_PASSWORD:-change-me}@db:5432/widgets
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      # Demo defaults so the acceptance probes are deterministic out of the box.
+      # For real deployments: GEO_MODE=live, ENABLE_DEBUG=false.
+      GEO_MODE: ${GEO_MODE:-mock}
+      ENABLE_DEBUG: ${ENABLE_DEBUG:-true}
+      DEBUG_TOKEN: ${DEBUG_TOKEN:-dev-debug-token}
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-console}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      RATE_IP_CAPACITY: ${RATE_IP_CAPACITY:-10}
+      RATE_IP_REFILL_PER_SEC: ${RATE_IP_REFILL_PER_SEC:-2}
+      JOB_BACKOFF_BASE_SECONDS: ${JOB_BACKOFF_BASE_SECONDS:-1.5}
+
+  # Optional local mail catcher: docker compose --profile mail up
+  # then set EMAIL_BACKEND=smtp. Inbox UI at http://localhost:8025
+  mailpit:
+    image: axllent/mailpit
+    profiles: ["mail"]
+    ports:
+      - "8025:8025"
+
+  # The "customer site": static pages on a DIFFERENT origin (port 5500).
+  customer-site:
+    image: python:3.12-slim
+    working_dir: /site
+    volumes:
+      - ./demo:/site:ro
+    command: python -m http.server 5500
+    ports:
+      - "5500:5500"
+
+volumes:
+  pgdata:
